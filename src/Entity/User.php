@@ -40,6 +40,17 @@ class User extends AbstractEntity implements UserInterface, PasswordAuthenticate
     #[ORM\Column(nullable: true)]
     private ?bool $firstLogin = null;
 
+    /**
+     * @var Collection<int, UserCreneau>
+     */
+    #[ORM\OneToMany(targetEntity: UserCreneau::class, mappedBy: 'user')]
+    private Collection $userCreneaus;
+
+    public function __construct()
+    {
+        $this->userCreneaus = new ArrayCollection();
+    }
+
     public function getEmail(): ?string
     {
         return $this->email;
@@ -142,6 +153,36 @@ class User extends AbstractEntity implements UserInterface, PasswordAuthenticate
     public function setFirstLogin(bool $firstLogin): static
     {
         $this->firstLogin = $firstLogin;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserCreneau>
+     */
+    public function getUserCreneaus(): Collection
+    {
+        return $this->userCreneaus;
+    }
+
+    public function addUserCreneau(UserCreneau $userCreneau): static
+    {
+        if (!$this->userCreneaus->contains($userCreneau)) {
+            $this->userCreneaus->add($userCreneau);
+            $userCreneau->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserCreneau(UserCreneau $userCreneau): static
+    {
+        if ($this->userCreneaus->removeElement($userCreneau)) {
+            // set the owning side to null (unless already changed)
+            if ($userCreneau->getUser() === $this) {
+                $userCreneau->setUser(null);
+            }
+        }
 
         return $this;
     }

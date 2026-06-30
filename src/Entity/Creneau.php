@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CreneauRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -26,6 +28,17 @@ class Creneau extends AbstractEntity
 
     #[ORM\ManyToOne(inversedBy: 'creneaus')]
     private ?Planning $planningId = null;
+
+    /**
+     * @var Collection<int, UserCreneau>
+     */
+    #[ORM\OneToMany(targetEntity: UserCreneau::class, mappedBy: 'creneau')]
+    private Collection $userCreneaus;
+
+    public function __construct()
+    {
+        $this->userCreneaus = new ArrayCollection();
+    }
 
     public function getDate(): ?\DateTime
     {
@@ -95,6 +108,36 @@ class Creneau extends AbstractEntity
     public function setPlanningId(?Planning $planningId): static
     {
         $this->planningId = $planningId;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserCreneau>
+     */
+    public function getUserCreneaus(): Collection
+    {
+        return $this->userCreneaus;
+    }
+
+    public function addUserCreneau(UserCreneau $userCreneau): static
+    {
+        if (!$this->userCreneaus->contains($userCreneau)) {
+            $this->userCreneaus->add($userCreneau);
+            $userCreneau->setCreneau($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserCreneau(UserCreneau $userCreneau): static
+    {
+        if ($this->userCreneaus->removeElement($userCreneau)) {
+            // set the owning side to null (unless already changed)
+            if ($userCreneau->getCreneau() === $this) {
+                $userCreneau->setCreneau(null);
+            }
+        }
 
         return $this;
     }
