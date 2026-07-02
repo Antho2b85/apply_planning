@@ -6,6 +6,7 @@ use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use \Symfony\Component\String\Slugger\AsciiSlugger;
 use Exception;
 use Faker;
 
@@ -22,11 +23,14 @@ class UserFixtures extends Fixture
         $equipes = ['1','2'];
 
 // Fonction pour générer le mail entreprise
-$genererEmail = function(string $prenom, string $nom): string
-{
- $premiereLettre = substr($prenom, 0, 1);
- return strtolower($premiereLettre .$nom. '@corsicalinea.com');
-};
+$slugger = new AsciiSlugger();
+
+    $genererEmail = function($prenom, $nom) use ($slugger) {
+        $prenomClean = strtolower($slugger->slug($prenom));
+        $nomClean = strtolower($slugger->slug($nom));
+        
+        return $prenomClean . '.' . $nomClean . '@corsicalinea.com';
+    };
     
 
 // ======================================

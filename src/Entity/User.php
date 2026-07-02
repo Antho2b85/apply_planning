@@ -48,6 +48,7 @@ class User extends AbstractEntity implements UserInterface, PasswordAuthenticate
 
     public function __construct()
     {
+        $this->createdAt = new \DateTimeImmutable();
         $this->userCreneaus = new ArrayCollection();
     }
 
