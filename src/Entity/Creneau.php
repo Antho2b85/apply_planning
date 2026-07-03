@@ -35,6 +35,9 @@ class Creneau extends AbstractEntity
     #[ORM\OneToMany(targetEntity: UserCreneau::class, mappedBy: 'creneau')]
     private Collection $userCreneaus;
 
+    #[ORM\ManyToOne(inversedBy: 'creneaus')]
+    private ?Navire $navire = null;
+
     public function __construct()
     {
         $this->userCreneaus = new ArrayCollection();
@@ -138,6 +141,18 @@ class Creneau extends AbstractEntity
                 $userCreneau->setCreneau(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getNavire(): ?Navire
+    {
+        return $this->navire;
+    }
+
+    public function setNavire(?Navire $navire): static
+    {
+        $this->navire = $navire;
 
         return $this;
     }
