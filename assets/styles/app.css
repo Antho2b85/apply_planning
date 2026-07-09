@@ -1,3 +1,45 @@
-body {
-    background-color: skyblue;
+:root {
+    --primary: #c94b24;
+    --secondary: #0073a8;
+    --orange: #f9e6d9;
+    --grey: #cccccc;
+}
+
+.bg-corsica-red {
+    background-color: var(--primary);
+}
+
+.bg-corsica-grey {
+    background-color: var(--grey) !important;
+}
+
+.txt-corsica-red {
+    color: var(--primary) !important;
+}
+
+.txt-corsica-secondary {
+    color: var(--secondary) !important;
+}
+
+.navbar-corsica .nav-link,
+.navbar-corsica .navbar-brand {
+    color: var(--orange);
+}
+
+.btn-perso {
+    background-color: grey;
+    color: white;
+}
+
+.btn-perso:hover {
+    background-color: var(--orange);
+}
+
+/* Rendu du tableau planning général homogène */
+.table td {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+.table-responsive {
+    overflow-x: auto;
 }

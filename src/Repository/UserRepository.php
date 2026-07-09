@@ -32,4 +32,16 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
     }
+
+    // Fonction pour attribuer une équipe à un user
+    public function findAgentsByTeam(string $teamName): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.equipe = :team')
+            ->andWhere('u.roles NOT LIKE :adminRole')
+            ->setParameter('team', $teamName)
+            ->setParameter('adminRole', '%"ROLE_ADMIN"%')
+            ->getQuery()
+            ->getResult();
+    }
 }

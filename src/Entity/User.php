@@ -48,10 +48,17 @@ class User extends AbstractEntity implements UserInterface, PasswordAuthenticate
     #[ORM\OneToMany(targetEntity: UserCreneau::class, mappedBy: 'user')]
     private Collection $userCreneaus;
 
+    /**
+     * @var Collection<int, Absence>
+     */
+    #[ORM\OneToMany(targetEntity: Absence::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $absences;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->userCreneaus = new ArrayCollection();
+        $this->absences = new ArrayCollection();
     }
 
     public function getEmail(): ?string
@@ -189,4 +196,52 @@ class User extends AbstractEntity implements UserInterface, PasswordAuthenticate
 
         return $this;
     }
+
+    public function getCreneausPourDate($targetDate): array
+    {
+        $creneauArray = [];
+
+        foreach ($this->userCreneaus as $userCreneau) {
+
+            $creneau = $userCreneau->getCreneau();
+
+            // Filtrer par date
+            if ($creneau->getDate()->format('Y-m-d') !== $targetDate->format('Y-m-d')) {
+                continue;
+            }
+            $creneauArray[] = $userCreneau;
+        }
+        return $creneauArray;
+    }
+
+    /**
+     * @return Collection<int, Absence>
+     */
+    public function getAbsences(): Collection
+    {
+        return $this->absences;
+    }
+
+    public function addAbsence(Absence $absence): static
+    {
+        if (!$this->absences->contains($absence)) {
+            $this->absences->add($absence);
+            $absence->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAbsence(Absence $absence): static
+    {
+        if ($this->absences->removeElement($absence)) {
+            // set the owning side to null (unless already changed)
+            if ($absence->getUser() === $this) {
+                $absence->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
 }

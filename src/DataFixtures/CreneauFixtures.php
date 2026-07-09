@@ -3,7 +3,6 @@
 namespace App\DataFixtures;
 
 use App\Entity\Creneau;
-use App\Entity\Navire;
 use App\Entity\Planning;
 use App\Entity\UserCreneau;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -24,62 +23,79 @@ class CreneauFixtures extends Fixture implements DependentFixtureInterface
             $planning = $this->getReference('planning-employe-' .$i. '-courante', Planning::class);
 
             // Génération sur les jours de la semaine
-            for ($jour = 0; $jour <= 7; $jour++) {
-                $dateCreneau = clone $planning->getDateDebutSemaine();
-                $dateCreneau = $dateCreneau->modify("$jour day");
+            for ($jour = 0; $jour <= 6; $jour++) {
+                $dateCreneau = (clone $planning->getDateDebutSemaine())->modify("+{$jour} days");
 
-                // Heure de début arrondie
-                $heureDebutInt = rand(5, 19);
-                $heureDebutStr = sprintf('%02d:00:00', $heureDebutInt);
-
-                // Heure de fin arrondie
-                $heureFinInt = rand($heureDebutInt + 2, 24);
-
-                // Je sécurise pour rester sur la même journée dans la BDD
-                if ($heureFinInt === 24) {
-                    $heureFinStr = "23:59:59";
-                } else {
-                    $heureFinStr = sprintf('%02d:00:00', $heureFinInt);
-                }
-
-                // Durée de travail en heures pour la journée
-                $duree = $heureFinInt - $heureDebutInt;
-
-                // Poste au hasard
-                $posteChoisi = $postesPossibles[array_rand($postesPossibles)];
+                $keys = array_rand($postesPossibles, 2);
+                $posteMatin = $postesPossibles[$keys[0]];
+                $posteAprem = $postesPossibles[$keys[1]];
 
 
-                // Création du créneau
-                $creneau = new Creneau();
-                $creneau->setDate($dateCreneau)
-                        ->setHeureDebut(new \DateTime(($heureDebutStr)))
-                        ->setHeureFin(new \DateTime(($heureFinStr)))
-                        ->setDuree($duree)
-                        ->setPoste($posteChoisi)
-                        ->setPlanningId($planning)
-                        ->setNavire($this->getReference('navire_' . rand(0, 8), Navire::class));
 
-                $creneau->setCreatedAt(new \DateTimeImmutable());
-                $creneau->setUpdatedAt(new \DateTimeImmutable());
+                // MATIN 5h–12h
+                $debutMatin = (clone $dateCreneau)->setTime(5, 0);
+                $finMatin   = (clone $dateCreneau)->setTime(12, 0);
+                $dureeMatin = (int)(($finMatin->getTimestamp() - $debutMatin->getTimestamp()) / 3600);
 
-                $manager->persist($creneau);
+                $creneauMatin = new Creneau();
+                $creneauMatin->setDate($dateCreneau)
+                    ->setHeureDebut($debutMatin)
+                    ->setHeureFin($finMatin)
+                    ->setPoste($posteMatin)
+                    ->setDuree($dureeMatin)
+                    ->setTypeShift('MATIN')
+                    ->setNavire($this->getReference('navire_' . rand(0, 8), \App\Entity\Navire::class))
+                    ->setPlanningId($planning)
+                    ->setCreatedAt(new \DateTimeImmutable())
+                    ->setUpdatedAt(new \DateTimeImmutable());
 
+                $manager->persist($creneauMatin);
 
-                $link = new UserCreneau();
-                $link->setUser($employe);
-                $link->setCreneau($creneau);
-                $link->setCreatedAt(new \DateTimeImmutable());
-                $link->setUpdatedAt(new \DateTimeImmutable());
+                $linkMatin = new UserCreneau();
+                $linkMatin->setUser($employe)
+                    ->setCreneau($creneauMatin)
+                    ->setCreatedAt(new \DateTimeImmutable())
+                    ->setUpdatedAt(new \DateTimeImmutable());
 
-                $manager->persist($link);
+                $manager->persist($linkMatin);
+                // =================================================================
+
+                // APRES-MIDI 14h–19h
+                $debutAprem = (clone $dateCreneau)->setTime(14, 0);
+                $finAprem   = (clone $dateCreneau)->setTime(19, 0);
+                $dureeAprem = (int)(($finAprem->getTimestamp() - $debutAprem->getTimestamp()) / 3600);
+
+                $creneauAprem = new Creneau();
+                $creneauAprem->setDate($dateCreneau)
+                    ->setHeureDebut($debutAprem)
+                    ->setHeureFin($finAprem)
+                    ->setPoste($posteAprem)
+                    ->setDuree($dureeAprem)
+                    ->setTypeShift('APRES_MIDI')
+                    ->setNavire($this->getReference('navire_' . rand(0, 8), \App\Entity\Navire::class))
+                    ->setPlanningId($planning)
+                    ->setCreatedAt(new \DateTimeImmutable())
+                    ->setUpdatedAt(new \DateTimeImmutable());
+
+                $manager->persist($creneauAprem);
+
+                $linkAprem = new UserCreneau();
+                $linkAprem->setUser($employe)
+                    ->setCreneau($creneauAprem)
+                    ->setCreatedAt(new \DateTimeImmutable())
+                    ->setUpdatedAt(new \DateTimeImmutable());
+
+                $manager->persist($linkAprem);
             }
         }
+
         $manager->flush();
     }
 
     public function getDependencies(): array
     {
         return [
+            UserFixtures::class,
             PlanningFixtures::class,
             NavireFixtures::class,
         ];

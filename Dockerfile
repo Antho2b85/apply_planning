@@ -6,10 +6,11 @@ git \
 unzip \
 libssl-dev \
 libcurl4-openssl-dev \
-pkg-config
+pkg-config \
+libicu-dev
 
-# Installation dde MySQL pour Doctrine
-RUN docker-php-ext-install pdo pdo_mysql
+# Installation dde MySQL pour Doctrine et de Intl
+RUN docker-php-ext-configure intl && docker-php-ext-install pdo pdo_mysql intl
 
 # Installation de MongoDB
 RUN pecl install mongodb && docker-php-ext-enable mongodb

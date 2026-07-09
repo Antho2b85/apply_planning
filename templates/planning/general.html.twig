@@ -1,0 +1,186 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Planning Général - Corsica Linea{% endblock %}
+
+{% block body %}
+
+<main>
+<div class="container-fluid d-flex align-items-baseline mt-4">
+<h3>Semaine {{numeroSemaine}}</h3>
+<p class="mt-1 ms-2"> - du {{texteDebut}} au {{texteFin}}</p>
+</div>
+<hr>
+
+<section>
+<div class="table-responsive container-fluid mt-5 border">
+<table class="table">
+
+<thead>
+<tr>
+<th class="text-center border"><u>Agents</u></th>
+{% for semaineDate in semaineDates %}
+<th class="txt-corsica-secondary text-center border"><u>
+{{semaineDate |format_date(pattern="EEEE d") }}
+</u></th>
+{% endfor %}
+</tr>
+</thead>
+
+<tbody>
+{% for user in users %}
+<tr>
+<th class="bg-corsica-grey txt-corsica-red text-center align-items-center pt-5">
+{{user.prenom}} <br> {{user.nom}}
+</th>
+    {% for semaineDate in semaineDates %}
+    <td class="border border-5">
+    {% set userCreneaus = user.getCreneausPourDate(semaineDate) %}
+    {% set creneauMatin = null %}
+    {% set creneauAprem = null %}
+    {% for uc in userCreneaus %}
+        {% if uc.creneau.heureDebut |date('H') < 13 %}
+            {% set creneauMatin = uc %}
+        {% else %}
+            {% set creneauAprem = uc %}
+        {% endif %}
+    {% endfor %}
+
+    <div class="mb-2 p-1 border-bottom">
+        {% if creneauMatin is not null %}
+            {{ creneauMatin.creneau.heureDebut|date('H:i') }} - {{ creneauMatin.creneau.heureFin|date('H:i') }} :
+            {{ creneauMatin.creneau.motifAbsence ?: creneauMatin.creneau.poste }}
+        {% else %}
+            <span class="text-muted">+ Matin</span>
+        {% endif %}
+    </div>
+
+    <div class="p-1">
+        {% if creneauAprem is not null %}
+            {{ creneauAprem.creneau.heureDebut|date('H:i') }} - {{ creneauAprem.creneau.heureFin|date('H:i') }} :
+            {{ creneauAprem.creneau.motifAbsence ?: creneauAprem.creneau.poste }}
+        {% else %}
+            <span class="text-muted">+ Après-midi</span>
+        {% endif %}
+    </div>
+
+    {# Convertir l'UUID en string pour accéder à totaux #}
+        {% set userId = user.id.toRfc4122 %}
+
+    {# Total d'heures du jour #}
+        {% set total = totaux[userId][semaineDate|date('Y-m-d')] ?? null %}
+
+    <div class="mt-2 fw-bold small text-center">
+    {% if total and total.heures > 0 %}
+        Total : {{ total.heures }}h00
+    {% else %}
+        Total : 0h00
+    {% endif %}
+</div>
+
+{# Bouton pour modifier les horaires et postes #}
+<div class="d-flex justify-content-center gap-4 mt-3">
+{% if is_granted('ROLE_ADMIN') %}
+<button class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#exampleModal"
+ data-creneau-matin-id="{{ creneauMatin is not null ? creneauMatin.creneau.id : '' }}" 
+ data-heure-debut-matin="{{ creneauMatin is not null ? creneauMatin.creneau.heureDebut|date('H:i') : '' }}" 
+ data-heure-fin-matin="{{ creneauMatin is not null ? creneauMatin.creneau.heureFin|date('H:i') : '' }}"
+ data-poste-matin="{{ creneauMatin is not null ? creneauMatin.creneau.poste : '' }}"
+ 
+ data-creneau-aprem-id="{{ creneauAprem is not null ? creneauAprem.creneau.id : '' }}" 
+ data-heure-debut-aprem="{{ creneauAprem is not null ? creneauAprem.creneau.heureDebut|date('H:i') : '' }}" 
+ data-heure-fin-aprem="{{ creneauAprem is not null ? creneauAprem.creneau.heureFin|date('H:i') : '' }}"
+ data-poste-aprem="{{ creneauAprem is not null ? creneauAprem.creneau.poste : '' }}"
+ >
+<i class="bi bi-pencil-square"></i>
+</button>
+{% endif %}
+</div>
+
+</td>
+{% endfor %}
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+</div>
+
+</section>
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Planification</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+        {# Token csrf #}
+        <input type="hidden" name="_token" value=" {{ csrf_token ('modifier_planning')}}">
+          
+          <div class="mb-3">
+            <label for="horairesMatinDebut" class="col-form-label">Horaires matin début:</label>
+            <input type="time" class="form-control" id="horairesMatinDebut">
+          </div>
+          <div class="mb-3">
+            <label for="horairesMatinFin" class="col-form-label">Horaires matin fin:</label>
+            <input type="time" class="form-control" id="horairesMatinFin">
+          </div>
+
+          <div class="mb-3">
+            <label for="horairesApremDebut" class="col-form-label">Horaires après-midi début:</label>
+            <input type="time" class="form-control" id="horairesApremDebut">
+          </div>
+                    <div class="mb-3">
+            <label for="horairesApremFin" class="col-form-label">Horaires après-midi fin:</label>
+            <input type="time" class="form-control" id="horairesApremFin">
+          </div>
+
+            <div class="mb-3">
+            <label for="post-select-matin">Choisir le poste du matin:</label>
+            <select name="post-matin" id="post-select-matin">
+            <option value="RESA/TAXE/CONV">RESA/TAXE/CONV</option>
+            <option value="CALL ENTRANT">CALL ENTRANT</option>
+            <option value="GUICHET/GM">GUICHET/GM</option>
+            <option value="DEB AC">DEB AC</option>
+            <option value="RESERVES AC">RESERVES AC</option>
+            <option value="RESERVES">RESERVES</option>
+            <option value="PK">PK</option>
+            <option value="PT DEB">PT DEB</option>
+            <option value="PT EMB">PT EMB</option>
+            <option value="GUICHET">GUICHET</option>
+            </select>
+            </div>
+
+                        <div class="mb-3">
+            <label for="post-select-aprem">Choisir le poste de l'après midi:</label>
+            <select name="post-aprem" id="post-select-aprem">
+            <option value="RESA/TAXE/CONV">RESA/TAXE/CONV</option>
+            <option value="CALL ENTRANT">CALL ENTRANT</option>
+            <option value="GUICHET/GM">GUICHET/GM</option>
+            <option value="DEB AC">DEB AC</option>
+            <option value="RESERVES AC">RESERVES AC</option>
+            <option value="RESERVES">RESERVES</option>
+            <option value="PK">PK</option>
+            <option value="PT DEB">PT DEB</option>
+            <option value="PT EMB">PT EMB</option>
+            <option value="GUICHET">GUICHET</option>
+            </select>
+            </div>
+
+          <div class="mb-3">
+            <label for="message-text" class="col-form-label">Message:</label>
+            <textarea class="form-control" id="message-text"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+        <button type="button" class="btn btn-primary">Envoyer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+{% endblock %}

@@ -15,5 +15,25 @@ class CreneauRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Creneau::class);
     }
-}
 
+    public function getTotalMinutesForUserOnDate(\App\Entity\User $user, \DateTimeInterface $date): int
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = '
+        SELECT SUM(c.duree)
+        FROM creneau c
+        JOIN user_creneau uc ON uc.creneau_id = c.id
+        WHERE uc.user_id = :userId
+        AND c.date = :date
+    ';
+
+        $result = $conn->executeQuery($sql, [
+            'userId' => $user->getId()->toBinary(),
+            'date' => $date->format('Y-m-d'),
+        ])->fetchOne();
+
+        return $result !== null ? (int) $result : 0;
+    }
+
+}

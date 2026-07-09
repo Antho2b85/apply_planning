@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use SebastianBergmann\Diff\Diff;
 
 #[ORM\Entity(repositoryClass: CreneauRepository::class)]
 class Creneau extends AbstractEntity
@@ -38,6 +39,12 @@ class Creneau extends AbstractEntity
     #[ORM\ManyToOne(inversedBy: 'creneaus')]
     private ?Navire $navire = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $motifAbsence = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $typeShift = null;
+
     public function __construct()
     {
         $this->userCreneaus = new ArrayCollection();
@@ -64,6 +71,7 @@ class Creneau extends AbstractEntity
     {
         $this->heureDebut = $heureDebut;
 
+        $this->calculateWorkTime();
         return $this;
     }
 
@@ -75,7 +83,7 @@ class Creneau extends AbstractEntity
     public function setHeureFin(\DateTime $heureFin): static
     {
         $this->heureFin = $heureFin;
-
+        $this->calculateWorkTime();
         return $this;
     }
 
@@ -153,6 +161,40 @@ class Creneau extends AbstractEntity
     public function setNavire(?Navire $navire): static
     {
         $this->navire = $navire;
+
+        return $this;
+    }
+
+    private function calculateWorkTime()
+    {
+        if (!$this->heureDebut || !$this->heureFin) {
+            $this->duree = 0;
+        } else {
+            $intervalle = ($this->heureDebut)->diff($this->heureFin);
+            $this->duree = ($intervalle->h * 60) + $intervalle->i;
+        }
+    }
+
+    public function getMotifAbsence(): ?string
+    {
+        return $this->motifAbsence;
+    }
+
+    public function setMotifAbsence(?string $motifAbsence): static
+    {
+        $this->motifAbsence = $motifAbsence;
+
+        return $this;
+    }
+
+    public function getTypeShift(): ?string
+    {
+        return $this->typeShift;
+    }
+
+    public function setTypeShift(?string $typeShift): static
+    {
+        $this->typeShift = $typeShift;
 
         return $this;
     }
