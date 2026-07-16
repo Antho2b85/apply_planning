@@ -6,10 +6,11 @@ use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use \Symfony\Component\String\Slugger\AsciiSlugger;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 use Exception;
 use Faker;
 
+// // Données de test uniquement — ne jamais utiliser en production
 class UserFixtures extends Fixture
 {
     public function __construct(private UserPasswordHasherInterface $passwordHasher)
@@ -22,20 +23,20 @@ class UserFixtures extends Fixture
         $faker = Faker\Factory::create('fr_FR');
         $equipes = ['1','2'];
 
-// Fonction pour générer le mail entreprise
-$slugger = new AsciiSlugger();
+        // Fonction pour générer le mail entreprise
+        $slugger = new AsciiSlugger();
 
-    $genererEmail = function($prenom, $nom) use ($slugger) {
-        $prenomClean = strtolower($slugger->slug($prenom));
-        $nomClean = strtolower($slugger->slug($nom));
-        
-        return $prenomClean . '.' . $nomClean . '@corsicalinea.com';
-    };
-    
+        $genererEmail = function ($prenom, $nom) use ($slugger) {
+            $prenomClean = strtolower($slugger->slug($prenom));
+            $nomClean = strtolower($slugger->slug($nom));
 
-// ======================================
-// Fixture for Responsable
-// ======================================
+            return $prenomClean . '.' . $nomClean . '@corsicalinea.com';
+        };
+
+
+        // ======================================
+        // Fixture for Responsable
+        // ======================================
         $responsable = new User();
         $hashedPassword = $this->passwordHasher->hashPassword($responsable, 'admin123');
         $nom = 'Papi';
@@ -48,40 +49,40 @@ $slugger = new AsciiSlugger();
                 ->setRoles(['ROLE_ADMIN'])
                 ->setPassword($hashedPassword);
 
-                $manager->persist($responsable);
-                $this->addReference('user-responsable', $responsable);
+        $manager->persist($responsable);
+        $this->addReference('user-responsable', $responsable);
 
 
-// ======================================
-// Fixture for Chef d'equipe
-// ======================================
+        // ======================================
+        // Fixture for Chef d'equipe
+        // ======================================
         $chef = new User();
         $hashedPassword = $this->passwordHasher->hashPassword($chef, 'chef23');
         $nom = 'Cesari';
         $prenom = 'Armand';
 
-            $chef->setNom($nom)
-                ->setPrenom($prenom)
-                ->setEmail($genererEmail($prenom, $nom))
-                ->setFirstLogin(false)
-                ->setRoles(['ROLE_CHEF'])
-                ->setPassword($hashedPassword)
-                ->setEquipe($faker->randomElement($equipes));
+        $chef->setNom($nom)
+            ->setPrenom($prenom)
+            ->setEmail($genererEmail($prenom, $nom))
+            ->setFirstLogin(false)
+            ->setRoles(['ROLE_CHEF'])
+            ->setPassword($hashedPassword)
+            ->setEquipe($faker->randomElement($equipes));
 
-                $manager->persist($chef);
-                $this->addReference('user-chef-1', $chef);
+        $manager->persist($chef);
+        $this->addReference('user-chef-1', $chef);
 
 
-// ======================================
-// Fixture for Users
-// ======================================
-        for ($i = 1; $i <= 14; $i++){
-           $user = new User();
+        // ======================================
+        // Fixture for Users
+        // ======================================
+        for ($i = 1; $i <= 14; $i++) {
+            $user = new User();
             $hashedPassword = $this->passwordHasher->hashPassword($user, 'password123');
 
             $fakerNom = $faker->lastName();
             $fakerPrenom = $faker->firstName();
-            
+
             $user->setNom($fakerNom)
                 ->setPrenom($fakerPrenom)
                 ->setEmail($genererEmail($fakerPrenom, $fakerNom))
@@ -89,7 +90,7 @@ $slugger = new AsciiSlugger();
                 ->setFirstLogin(true)
                 ->setRoles(['ROLE_USER'])
                 ->setPassword($hashedPassword);
-            
+
             $manager->persist($user);
             $this->addReference('user-employe-' .$i, $user);
         }

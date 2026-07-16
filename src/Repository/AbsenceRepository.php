@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Absence;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +17,17 @@ class AbsenceRepository extends ServiceEntityRepository
         parent::__construct($registry, Absence::class);
     }
 
-    //    /**
-    //     * @return Absence[] Returns an array of Absence objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('a.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
 
-    //    public function findOneBySomeField($value): ?Absence
-    //    {
-    //        return $this->createQueryBuilder('a')
-    //            ->andWhere('a.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    // Cherche une absence pour un agent à une date précise
+    public function findAbsenceForUserOnDate(\App\Entity\User $user, DateTime $date)
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->where('p.user = :user')
+            ->andWhere('p.dateDebut <= :date')
+            ->andWhere('p.dateFin >= :date')
+            ->setParameter('user', $user->getId()->toBinary(), \Doctrine\DBAL\Types\Types::BINARY)
+            ->setParameter('date', $date, \Doctrine\DBAL\Types\Types::DATE_MUTABLE)
+            ->setMaxResults(1);
+        return $qb->getQuery()->getOneOrNullResult();
+    }
 }

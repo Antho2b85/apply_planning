@@ -35,7 +35,7 @@ class CreneauFixtures extends Fixture implements DependentFixtureInterface
                 // MATIN 5h–12h
                 $debutMatin = (clone $dateCreneau)->setTime(5, 0);
                 $finMatin   = (clone $dateCreneau)->setTime(12, 0);
-                $dureeMatin = (int)(($finMatin->getTimestamp() - $debutMatin->getTimestamp()) / 3600);
+                $dureeMatin = (int)(($finMatin->getTimestamp() - $debutMatin->getTimestamp()) / 60);
 
                 $creneauMatin = new Creneau();
                 $creneauMatin->setDate($dateCreneau)
@@ -63,7 +63,7 @@ class CreneauFixtures extends Fixture implements DependentFixtureInterface
                 // APRES-MIDI 14h–19h
                 $debutAprem = (clone $dateCreneau)->setTime(14, 0);
                 $finAprem   = (clone $dateCreneau)->setTime(19, 0);
-                $dureeAprem = (int)(($finAprem->getTimestamp() - $debutAprem->getTimestamp()) / 3600);
+                $dureeAprem = (int)(($finAprem->getTimestamp() - $debutAprem->getTimestamp()) / 60);
 
                 $creneauAprem = new Creneau();
                 $creneauAprem->setDate($dateCreneau)
@@ -87,6 +87,72 @@ class CreneauFixtures extends Fixture implements DependentFixtureInterface
 
                 $manager->persist($linkAprem);
             }
+        }
+
+        // Planning chef d'equipe
+        $chef = $this->getReference('user-chef-1', \App\Entity\User::class);
+        $planningChef = $this->getReference('planning-chef-1-courante', Planning::class);
+
+        for ($jour = 0; $jour <= 6; $jour++) {
+            $dateCreneau = (clone $planningChef->getDateDebutSemaine())->modify("+{$jour} days");
+
+            $keys = array_rand($postesPossibles, 2);
+            $posteMatin = $postesPossibles[$keys[0]];
+            $posteAprem = $postesPossibles[$keys[1]];
+
+            // MATIN
+            $debutMatin = (clone $dateCreneau)->setTime(5, 0);
+            $finMatin   = (clone $dateCreneau)->setTime(12, 0);
+            $dureeMatin = (int)(($finMatin->getTimestamp() - $debutMatin->getTimestamp()) / 60);
+
+            $creneauMatin = new Creneau();
+            $creneauMatin->setDate($dateCreneau)
+                ->setHeureDebut($debutMatin)
+                ->setHeureFin($finMatin)
+                ->setPoste($posteMatin)
+                ->setDuree($dureeMatin)
+                ->setTypeShift('MATIN')
+                ->setNavire($this->getReference('navire_' . rand(0, 8), \App\Entity\Navire::class))
+                ->setPlanningId($planningChef)
+                ->setCreatedAt(new \DateTimeImmutable())
+                ->setUpdatedAt(new \DateTimeImmutable());
+
+            $manager->persist($creneauMatin);
+
+            $linkMatin = new UserCreneau();
+            $linkMatin->setUser($chef)
+                ->setCreneau($creneauMatin)
+                ->setCreatedAt(new \DateTimeImmutable())
+                ->setUpdatedAt(new \DateTimeImmutable());
+
+            $manager->persist($linkMatin);
+
+            // APRES-MIDI
+            $debutAprem = (clone $dateCreneau)->setTime(14, 0);
+            $finAprem   = (clone $dateCreneau)->setTime(19, 0);
+            $dureeAprem = (int)(($finAprem->getTimestamp() - $debutAprem->getTimestamp()) / 60);
+
+            $creneauAprem = new Creneau();
+            $creneauAprem->setDate($dateCreneau)
+                ->setHeureDebut($debutAprem)
+                ->setHeureFin($finAprem)
+                ->setPoste($posteAprem)
+                ->setDuree($dureeAprem)
+                ->setTypeShift('APRES_MIDI')
+                ->setNavire($this->getReference('navire_' . rand(0, 8), \App\Entity\Navire::class))
+                ->setPlanningId($planningChef)
+                ->setCreatedAt(new \DateTimeImmutable())
+                ->setUpdatedAt(new \DateTimeImmutable());
+
+            $manager->persist($creneauAprem);
+
+            $linkAprem = new UserCreneau();
+            $linkAprem->setUser($chef)
+                ->setCreneau($creneauAprem)
+                ->setCreatedAt(new \DateTimeImmutable())
+                ->setUpdatedAt(new \DateTimeImmutable());
+
+            $manager->persist($linkAprem);
         }
 
         $manager->flush();

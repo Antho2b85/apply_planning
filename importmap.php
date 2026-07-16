@@ -35,4 +35,8 @@ return [
         'version' => '5.3.8',
         'type' => 'css',
     ],
+    'planning_general' => [
+        'path' => './assets/js/planning-general.js',
+        'entrypoint' => true,
+    ],
 ];
