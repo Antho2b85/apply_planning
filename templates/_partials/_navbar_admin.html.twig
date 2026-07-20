@@ -10,7 +10,9 @@
           <a class="nav-link active" aria-current="page" href="#">Planning général</a>
         </li>
         <li class="nav-item">
+          {% if is_granted('ROLE_ADMIN') %}
           <a class="nav-link" href="#">Ajouter agent</a>
+          {% endif %}
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#">Exporter PDF</a>

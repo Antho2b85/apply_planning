@@ -31,6 +31,8 @@
         {% if app.user %}
         {% if is_granted('ROLE_ADMIN') %}
     {{ include ('_partials/_navbar_admin.html.twig') }}
+    {% else %}
+        {{ include ('_partials/_navbar_user.html.twig') }}
         {% endif %}
         {% endif %}
     {% endblock %}

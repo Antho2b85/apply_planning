@@ -150,7 +150,7 @@ final class PlanningController extends AbstractController
         }
     }
 
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     #[Route('/admin/planning/{offset}', name: 'app_admin_planning', defaults: ['offset' => 0])]
     public function adminPlanning(
         int $offset,

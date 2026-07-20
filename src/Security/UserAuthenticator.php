@@ -15,6 +15,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\PasswordC
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\SecurityRequestAttributes;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
+use App\Document\LoginLog;
 
 class UserAuthenticator extends AbstractLoginFormAuthenticator
 {
@@ -22,8 +23,10 @@ class UserAuthenticator extends AbstractLoginFormAuthenticator
 
     public const LOGIN_ROUTE = 'app_login';
 
-    public function __construct(private UrlGeneratorInterface $urlGenerator)
-    {
+    public function __construct(
+        private UrlGeneratorInterface $urlGenerator,
+        private \Doctrine\ODM\MongoDB\DocumentManager $dm
+    ) {
     }
 
     public function authenticate(Request $request): Passport
@@ -46,15 +49,16 @@ class UserAuthenticator extends AbstractLoginFormAuthenticator
     {
         $user = $token->getUser();
 
-        if (in_array('ROLE_ADMIN', $user->getRoles())) {
-            return new RedirectResponse($this->urlGenerator->generate('app_admin_planning', ['team' => '1']));
-        }
+        // Enregistrement du log de connexion dans MongoDB
+        $loginLog = new LoginLog();
+        $loginLog ->setEmail($user->getUserIdentifier());
+        $loginLog ->setRole(implode(', ', $user->getRoles()));
+        $loginLog ->setConnectedAt(new \DateTime());
 
-        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
-            return new RedirectResponse($targetPath);
-        }
+        $this->dm->persist($loginLog);
+        $this->dm->flush();
 
-        return new RedirectResponse($this->urlGenerator->generate('app_planning'));
+        return new RedirectResponse($this->urlGenerator->generate('app_admin_planning', ['offset' => 0]));
     }
 
     protected function getLoginUrl(Request $request): string
