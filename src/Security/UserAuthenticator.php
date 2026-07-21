@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use Proxies\__CG__\App\Entity\User;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,6 +48,9 @@ class UserAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
+        /**
+         * @var User $user
+         */
         $user = $token->getUser();
 
         // Enregistrement du log de connexion dans MongoDB
@@ -58,7 +62,12 @@ class UserAuthenticator extends AbstractLoginFormAuthenticator
         $this->dm->persist($loginLog);
         $this->dm->flush();
 
-        return new RedirectResponse($this->urlGenerator->generate('app_admin_planning', ['offset' => 0]));
+        if ($user->isFirstLogin() === true) {
+            return new RedirectResponse($this->urlGenerator->generate('app_complet_profile'));
+        } else {
+            return new RedirectResponse($this->urlGenerator->generate('app_admin_planning', ['offset' => 0]));
+        }
+
     }
 
     protected function getLoginUrl(Request $request): string

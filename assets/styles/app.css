@@ -43,3 +43,26 @@
 .table-responsive {
     overflow-x: auto;
 }
+
+/* Config du bouton "exporter PDF de la navbar"*/
+@media print {
+    .navbar {
+        display: none;
+    }
+    .btn {
+        display: none;
+    }
+    .modal {
+        display: none;
+    }
+    .nav-tabs {
+        display: none;
+    }
+    .nav-semaine {
+        display: none;
+    }
+
+    .tab-pane {
+        display: block !important;
+    }
+}

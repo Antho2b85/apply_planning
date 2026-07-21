@@ -12,6 +12,54 @@
 
     <section class="container-fluid mt-3">
 
+    {# Modal pour ajouter un nouveau agent #}
+<div class="modal fade" id="modalAjouterAgent" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5">Ajouter un agent</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formAjouterAgent">
+            <input type="hidden" name="_token" value="{{ csrf_token('ajouter_agent') }}">
+
+            <div class="mb-3">
+                <label for="email" class="col-form-label">email :</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="nom" class="col-form-label">Nom :</label>
+                <input type="text" class="form-control" id="nom" name="nom" required>
+            </div>
+                        <div class="mb-3">
+                <label for="prenom" class="col-form-label">Prénom :</label>
+                <input type="text" class="form-control" id="prenom" name="prenom" required>
+            </div>
+                                    <div class="mb-3">
+                <label for="equipe-select" class="col-form-label">Équipe :</label>
+                <select name="equipe-select" id="equipe-select" class="form-select" >
+                <option value="1">Équipe 1</option>
+                <option value="2">Équipe 2</option>
+                </select>              
+            </div>
+            <div class="mb-3">
+                <label for="role-select" class="col-form-label">Rôle :</label>
+                <select name="role-select" id="role-select" class="form-select" >
+                <option value="ROLE_CHEF">Chef d'équipe</option>
+                <option value="ROLE_USER">Agent</option>
+                </select> 
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+        <button type="button" class="btn btn-primary" id="btnAjouterAgent">Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
         {# Onglets #}
         <ul class="nav nav-tabs">
             <li class="nav-item">
@@ -105,7 +153,7 @@
                                                 >
                                                 <i class="bi bi-calendar-x"></i>
                                                 </button>
-                                                {% else %}
+                                                    {% endif %}
                                                     <button class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#exampleModal"
                                                         data-creneau-matin-id="{{ creneauMatin is not null ? creneauMatin.creneau.id : '' }}"
                                                         data-heure-debut-matin="{{ creneauMatin is not null ? creneauMatin.creneau.heureDebut|date('H:i') : '' }}"
@@ -120,7 +168,6 @@
                                                         >
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
-                                                    {% endif %}
                                                 {% endif %}
                                             </div>
                                         </td>
@@ -215,7 +262,7 @@
                                                 >
                                                 <i class="bi bi-calendar-x"></i>
                                                 </button>
-                                                {% else %}
+                                                    {% endif %}
                                                     <button class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#exampleModal"
                                                         data-creneau-matin-id="{{ creneauMatin is not null ? creneauMatin.creneau.id : '' }}"
                                                         data-heure-debut-matin="{{ creneauMatin is not null ? creneauMatin.creneau.heureDebut|date('H:i') : '' }}"
@@ -230,7 +277,6 @@
                                                         >
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
-                                                    {% endif %}
                                                 {% endif %}
                                             </div>
                                         </td>
@@ -332,11 +378,11 @@
     <input type="hidden" name="absenceDate" id="absenceDate">
     <div class="mb-3">
             <label for="motif" class="col-form-label">Motif absence :</label>
-            <input type="text" class="form-control" id="motif" name="motif">
+            <input type="text" class="form-control" id="motif" name="motif" required>
     </div>
        <div class="mb-3">
             <label for="debutAbs" class="col-form-label">Début :</label>
-            <input type="date" class="form-control" id="debutAbs" name="debutAbs">
+            <input type="date" class="form-control" id="debutAbs" name="debutAbs" required>
         </div>
            <div class="mb-3">
             <label for="finAbs" class="col-form-label">Fin :</label>
@@ -356,7 +402,7 @@
 
 
     {# Navigation semaine #}
-    <div class="d-flex justify-content-center py-3 gap-1">
+    <div class="d-flex justify-content-center py-3 gap-1 nav-semaine">
         <div class="border">
             <a href="{{ path('app_admin_planning', {'offset': offset - 1}) }}" class="btn btn-link p-0 px-2">
                 <i class="bi bi-chevron-compact-left"></i> Précédent

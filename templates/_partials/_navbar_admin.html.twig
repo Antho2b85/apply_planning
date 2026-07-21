@@ -11,11 +11,15 @@
         </li>
         <li class="nav-item">
           {% if is_granted('ROLE_ADMIN') %}
-          <a class="nav-link" href="#">Ajouter agent</a>
+          <a class="nav-link" data-bs-toggle="modal" data-bs-target="#modalAjouterAgent" href="#">Ajouter agent</a>
           {% endif %}
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Exporter PDF</a>
+        {% if is_granted('ROLE_ADMIN') %}
+          <a class="nav-link" href="#" id="btnExporterPDF">Exporter PDF</a>
+        {% else %}
+          <a class="nav-link" href="#">Arrivée du jour</a>
+        {% endif %}
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#">Prévisions du jour</a>

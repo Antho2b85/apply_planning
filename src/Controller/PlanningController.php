@@ -2,20 +2,23 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\Absence;
+use App\Entity\Creneau;
+use App\Entity\UserCreneau;
 use App\Repository\CreneauRepository;
 use App\Repository\UserCreneauRepository;
 use App\Repository\UserRepository;
-use DateTimeImmutable;
-use Symfony\Component\HttpFoundation\Request;
 use DateTime;
+use DateTimeImmutable;
 use IntlDateFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Entity\Creneau;
-use App\Entity\UserCreneau;
 
 final class PlanningController extends AbstractController
 {
@@ -25,7 +28,7 @@ final class PlanningController extends AbstractController
     // Planning individuel de l'agent connecté
     public function index(UserCreneauRepository $userCreneauRepository): Response
     {
-        /** @var \App\Entity\User $user */
+        /** @var User $user */
         $user = $this->getUser();
         $userCreneaus = $userCreneauRepository->findBy(['user' => $user]);
         return $this->render('planning/individuel.html.twig', [
@@ -74,8 +77,12 @@ final class PlanningController extends AbstractController
                 if (empty($creneauMatinId)) {
                     // Nouveau créneau matin
                     $creneauMatin = new Creneau();
-                    $creneauMatin->setHeureDebut(DateTime::createFromFormat('H:i', $horairesMatinDebut));
-                    $creneauMatin->setHeureFin(DateTime::createFromFormat('H:i', $horairesMatinFin));
+
+                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
+                        $creneauMatin->setHeureDebut(DateTime::createFromFormat('H:i', $horairesMatinDebut));
+                        $creneauMatin->setHeureFin(DateTime::createFromFormat('H:i', $horairesMatinFin));
+                    }
+
                     $creneauMatin->setPoste($request->request->get('post-matin'));
                     $creneauMatin->setPlanningId($planning);
                     $creneauMatin->setTypeShift('MATIN');
@@ -100,8 +107,10 @@ final class PlanningController extends AbstractController
                 } else {
                     // Modification du créneau matin existant
                     $creneauMatin = $creneauRepository->find($creneauMatinId);
-                    $creneauMatin->setHeureDebut(DateTime::createFromFormat('H:i', $horairesMatinDebut));
-                    $creneauMatin->setHeureFin(DateTime::createFromFormat('H:i', $horairesMatinFin));
+                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
+                        $creneauMatin->setHeureDebut(DateTime::createFromFormat('H:i', $horairesMatinDebut));
+                        $creneauMatin->setHeureFin(DateTime::createFromFormat('H:i', $horairesMatinFin));
+                    }
                     $creneauMatin->setPoste($request->request->get('post-matin'));
                 }
 
@@ -109,8 +118,10 @@ final class PlanningController extends AbstractController
                 if (empty($creneauApremId)) {
                     // Nouveau créneau apres midi
                     $creneauAprem = new Creneau();
-                    $creneauAprem->setHeureDebut(DateTime::createFromFormat('H:i', $horairesApremDebut));
-                    $creneauAprem->setHeureFin(DateTime::createFromFormat('H:i', $horairesApremFin));
+                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
+                        $creneauAprem->setHeureDebut(DateTime::createFromFormat('H:i', $horairesApremDebut));
+                        $creneauAprem->setHeureFin(DateTime::createFromFormat('H:i', $horairesApremFin));
+                    }
                     $creneauAprem->setPoste($request->request->get('post-aprem'));
                     $creneauAprem->setPlanningId($planning);
                     $creneauAprem->setTypeShift('APRES_MIDI');
@@ -135,8 +146,10 @@ final class PlanningController extends AbstractController
                 } else {
                     // Modification créneau apres midi existant
                     $creneauAprem = $creneauRepository->find($creneauApremId);
-                    $creneauAprem->setHeureDebut(DateTime::createFromFormat('H:i', $horairesApremDebut));
-                    $creneauAprem->setHeureFin(DateTime::createFromFormat('H:i', $horairesApremFin));
+                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
+                        $creneauAprem->setHeureDebut(DateTime::createFromFormat('H:i', $horairesApremDebut));
+                        $creneauAprem->setHeureFin(DateTime::createFromFormat('H:i', $horairesApremFin));
+                    }
                     $creneauAprem->setPoste($request->request->get('post-aprem'));
                 }
             }
@@ -193,7 +206,7 @@ final class PlanningController extends AbstractController
         $allUsers = array_merge($usersTeam1, $usersTeam2);
         foreach ($allUsers as $user) {
 
-            if (!$user instanceof \App\Entity\User || $user->getId() === null) {
+            if (!$user instanceof User || $user->getId() === null) {
                 continue;
             }
 
@@ -273,6 +286,48 @@ final class PlanningController extends AbstractController
             return $this->json(['status' => 'ok']);
         } else {
             return $this->json(['status' => 'error', 'message' => 'Token CSRF invalide']);
+        }
+    }
+
+    // Création d'un nouvelle agent via le modal admin
+    #[IsGranted('ROLE_ADMIN')]
+    #[Route('/admin/agent/nouveau', name: 'app_admin_add', methods:['POST'])]
+    public function addAgent(
+        Request $request,
+        \Doctrine\ORM\EntityManagerInterface $em,
+        UserPasswordHasherInterface $userPasswordHasher
+    ): Response {
+        if ($this->isCsrfTokenValid('ajouter_agent', $request->request->get('_token'))) {
+            $email = $request->request->get('email');
+            $nom = $request->request->get('nom');
+            $prenom = $request->request->get('prenom');
+            $equipe = $request->request->get('equipe-select');
+            $role = $request->request->get('role-select');
+            $motDePasseTemp = bin2hex(random_bytes(8));
+
+
+            if (empty($email) || empty($nom) || empty($prenom) || empty($equipe) || empty($role)) {
+                return $this->json(['status' => 'error', 'message' => 'Données manquantes']);
+            }
+            if (!str_ends_with($email, '@corsicalinea.com')) {
+                return $this->json(['status' => 'error', 'message' => 'Email invalide']);
+            }
+
+            $agent = new User();
+            $agent ->setEmail($email);
+            $agent ->setNom($nom);
+            $agent ->setPrenom($prenom);
+            $agent ->setEquipe($equipe);
+            $agent ->setRoles([$role]);
+            $agent->setFirstLogin(true);
+            $hashedPassword = $userPasswordHasher->hashPassword($agent, $motDePasseTemp);
+            $agent->setPassword($hashedPassword);
+
+            $em->persist($agent);
+            $em->flush();
+            return $this->json(['status' => 'ok']);
+        } else {
+            return $this->json(['status' => 'error']);
         }
     }
 }
