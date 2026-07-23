@@ -13,6 +13,10 @@
     background-color: var(--grey) !important;
 }
 
+.bg-corsica-orange {
+    background-color: var(--orange) !important;
+}
+
 .txt-corsica-red {
     color: var(--primary) !important;
 }
@@ -65,4 +69,11 @@
     .tab-pane {
         display: block !important;
     }
+}
+
+/* page login */
+.page-login header,
+.page-login h1 {
+    margin: 0;
+    padding: 0;
 }

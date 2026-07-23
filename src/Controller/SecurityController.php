@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use DateTime;
+use IntlDateFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -21,7 +23,16 @@ class SecurityController extends AbstractController
         // last username entered by the user
         $lastUsername = $authenticationUtils->getLastUsername();
 
-        return $this->render('security/login.html.twig', ['last_username' => $lastUsername, 'error' => $error]);
+
+        $dateJour = new IntlDateFormatter('fr_FR', IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        $dateJour->setPattern('EEEE d MMMM yyyy');
+        $dateJourFormate = ucfirst($dateJour->format(new DateTime()));
+        return $this->render('security/login.html.twig', [
+            'last_username' => $lastUsername,
+            'error' => $error,
+            'dateJour' => $dateJourFormate
+        ]);
+
     }
 
     #[Route(path: '/logout', name: 'app_logout')]

@@ -90,7 +90,13 @@
                             {% for user in usersTeam1 %}
                                 <tr>
                                     <th class="bg-corsica-grey txt-corsica-red text-center align-middle">
+                                    {% if user.id.toRfc4122 === app.user.id.toRfc4122 %}
+                                    <a href="{{ path('app_planning') }}">
+                                    {{ user.prenom }} <br> {{ user.nom }}
+                                    </a>
+                                    {% else %}
                                         {{ user.prenom }} <br> {{ user.nom }}
+                                    {% endif %}
                                     </th>
                                     {% for semaineDate in semaineDates %}
                                         <td>
@@ -197,7 +203,13 @@
                             {% for user in usersTeam2 %}
                                 <tr>
                                     <th class="bg-corsica-grey txt-corsica-red text-center align-middle">
+                                    {% if user.id.toRfc4122 === app.user.id.toRfc4122 %}
+                                    <a href="{{ path('app_planning') }}">
                                         {{ user.prenom }} <br> {{ user.nom }}
+                                        </a>
+                                        {% else %}
+                                            {{ user.prenom }} <br> {{ user.nom }}
+                                            {% endif %}
                                     </th>
                                     {% for semaineDate in semaineDates %}
                                         <td>

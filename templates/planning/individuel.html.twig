@@ -1,20 +1,100 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello PlanningController!{% endblock %}
+{% block title %}Planning Agent{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
-
-<div class="example-wrapper">
-    <h1>Hello! ✅</h1>
-
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/var/www/html/src/Controller/PlanningController.php</code></li>
-        <li>Your template at <code>/var/www/html/templates/planning/index.html.twig</code></li>
-    </ul>
+<header>
+<div class="text-center border pt-2">
+    <h1 class="txt-corsica-red">{{ user.prenom }} {{ user.nom }}</h1>
+    <p class="txt-corsica-secondary">(Planning sous réserve de modifications)</p>
 </div>
+</header>
+
+<main>
+<section>
+<div class="d-flex flex-wrap gap-5 my-2 container justify-content-center justify-content-lg-start">
+
+  {% for semaineDate in semaineDates %}
+    <div class="card bg-corsica-grey" style="width: 18rem;">
+    <div class="card-body">
+  <div class="d-flex gap-2">
+    <i class="bi bi-calendar2"></i>
+    <h5 class="card-title txt-corsica-secondary">{{ semaineDate|format_date(pattern="EEEE d MMMM yyyy")}}</h5>
+  </div>
+    <hr>
+
+<div>
+    {% set userCreneaus = user.getCreneausPourDate(semaineDate) %}
+
+    {# On initialise à null pour éviter une erreur si l'agent n'a pas de créneau ce jour-là #}
+    {% set creneauMatin = null %}
+    {% set creneauAprem = null %}
+
+    {% for uc in userCreneaus %}
+        {# Seuil de 13h pour distinguer matin / après-midi #}
+        {% if uc.creneau.heureDebut|date('H') < 13 %}
+            {% set creneauMatin = uc %}
+        {% else %}
+            {% set creneauAprem = uc %}
+        {% endif %}
+    {% endfor %}
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th class="bg-corsica-orange" scope="col">Horaires :</th>
+                <th class="bg-corsica-orange" scope="col">Poste :</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if creneauMatin is not null %}
+                <tr>
+                    <td>{{ creneauMatin.creneau.heureDebut|date('H:i') }} - {{ creneauMatin.creneau.heureFin|date('H:i') }}</td>
+                    <td>{{ creneauMatin.creneau.motifAbsence ?: creneauMatin.creneau.poste }}</td>
+                </tr>
+            {% endif %}
+
+            {% if creneauAprem is not null %}
+                <tr>
+                    <td>{{ creneauAprem.creneau.heureDebut|date('H:i') }} - {{ creneauAprem.creneau.heureFin|date('H:i') }}</td>
+                    <td>{{ creneauAprem.creneau.motifAbsence ?: creneauAprem.creneau.poste }}</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    {% set dureeMatin = creneauMatin is not null ? creneauMatin.creneau.duree : 0 %}
+{% set dureeAprem = creneauAprem is not null ? creneauAprem.creneau.duree : 0 %}
+{% set totalMinutes = dureeMatin + dureeAprem %}
+{% set totalHeures = (totalMinutes / 60)|round(0, 'floor') %}
+
+<div class="mt-2 fw-bold small text-center">
+    {% if totalMinutes > 0 %}
+        Durée {{ '%02d'|format(totalHeures) }} heures
+    {% else %}
+        Durée 00 heures
+    {% endif %}
+</div>
+</div>
+  </div>
+</div>
+  {% endfor %}
+</div>
+</section>
+
+    {# Navigation semaine #}
+    <div class="d-flex justify-content-center py-3 me-3 gap-1 nav-semaine">
+        <div class="border">
+            <a href="{{ path('app_planning', {'offset': offset - 1}) }}" class="btn btn-link p-0 px-2">
+                <i class="bi bi-chevron-compact-left"></i> Précédent
+            </a>
+        </div>
+        <div class="border">
+            <a href="{{ path('app_planning', {'offset': offset + 1}) }}" class="btn btn-link p-0 px-2">
+                 Suivant <i class="bi bi-chevron-compact-right"></i>
+            </a>
+        </div>
+    </div>
+</main>
+
 {% endblock %}

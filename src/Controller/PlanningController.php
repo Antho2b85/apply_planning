@@ -23,16 +23,38 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class PlanningController extends AbstractController
 {
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    #[Route('/', name: 'app_planning')]
+    #[Route('/planning/{offset}', name: 'app_planning', defaults: ['offset' => 0])]
 
     // Planning individuel de l'agent connecté
-    public function index(UserCreneauRepository $userCreneauRepository): Response
+    public function index(UserCreneauRepository $userCreneauRepository, int $offset = 0): Response
     {
         /** @var User $user */
         $user = $this->getUser();
+
+        // Calcul début semaine
+        $dateTime = new DateTime();
+        $jourSemaine = (int) $dateTime->format('N');
+        $debutSemaine = (clone $dateTime)->modify('-' .($jourSemaine - 1) . ' days');
+        $debutSemaine->setTime(0, 0, 0);
+        $debutSemaine->modify(($offset * 7) . ' days');
+
+        // Date formaté
+        $fmt = new IntlDateFormatter('fr_FR', IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        $fmt->setPattern('EEEE d MMMM yyyy');
+        $dateJour = ucfirst($fmt->format($dateTime));
+
+        $semaineDates = [];
+        for ($jour = 0; $jour <= 6; $jour++) {
+            $semaineDates[] = (clone $debutSemaine)->modify("+$jour day");
+        }
+
         $userCreneaus = $userCreneauRepository->findBy(['user' => $user]);
         return $this->render('planning/individuel.html.twig', [
             'userCreneaus' => $userCreneaus,
+            'semaineDates' => $semaineDates,
+            'offset' => $offset,
+            'user' => $user,
+            'dateJour' => $dateJour
         ]);
     }
 

@@ -48,26 +48,30 @@ class UserAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        /**
-         * @var User $user
-         */
+        /** @var User $user */
         $user = $token->getUser();
 
         // Enregistrement du log de connexion dans MongoDB
         $loginLog = new LoginLog();
-        $loginLog ->setEmail($user->getUserIdentifier());
-        $loginLog ->setRole(implode(', ', $user->getRoles()));
-        $loginLog ->setConnectedAt(new \DateTime());
-
+        $loginLog->setEmail($user->getUserIdentifier());
+        $loginLog->setRole(implode(', ', $user->getRoles()));
+        $loginLog->setConnectedAt(new \DateTime());
         $this->dm->persist($loginLog);
         $this->dm->flush();
 
+        // Redirection selon first_login et type d'appareil
         if ($user->isFirstLogin() === true) {
             return new RedirectResponse($this->urlGenerator->generate('app_complet_profile'));
-        } else {
-            return new RedirectResponse($this->urlGenerator->generate('app_admin_planning', ['offset' => 0]));
         }
 
+        $userAgent = $request->headers->get('User-Agent');
+        $isMobile = preg_match('/Mobile|Android|iPhone|iPad/i', $userAgent);
+
+        if ($isMobile === 1) {
+            return new RedirectResponse($this->urlGenerator->generate('app_planning'));
+        }
+
+        return new RedirectResponse($this->urlGenerator->generate('app_admin_planning', ['offset' => 0]));
     }
 
     protected function getLoginUrl(Request $request): string
