@@ -1,20 +1,103 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello MouvementController!{% endblock %}
+{% block title %}Prévisions du jour{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
-
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
-
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/home/antho/Dev/corsica_linea_planning/src/Controller/MouvementController.php</code></li>
-        <li>Your template at <code>/home/antho/Dev/corsica_linea_planning/templates/mouvement/index.html.twig</code></li>
-    </ul>
+<header>
+<div class="text-center border pt-2">
+    <h1 class="txt-corsica-secondary">Prévisions de ce jour</h1>
 </div>
+</header>
+
+<main>
+<section>
+<div class="d-flex flex-column flex-lg-row align-items-center align-items-lg-stretch gap-3 ms-2">
+<div class="d-flex flex-column">
+{# {% for arrivee in arrivees %} #}
+<div class="card bg-corsica-grey my-2 position-relative" style="width: 18rem;">
+{# {% if is_granted('ROLE_ADMIN') %} #}
+<button type="button"
+        class="btn btn-link position-absolute end-0 pe-4 pt-3"
+        data-bs-toggle="modal"
+        data-bs-target="#modalArrivee"
+        data-id="{{ arrivee.id }}"
+        data-navire-id="{{ arrivee.navire ? arrivee.navire.id : '' }}"
+        data-heure-arrivee="{{ arrivee.heureArrivee ? arrivee.heureArrivee|date('H:i') : '' }}"
+        data-heure-depart="{{ arrivee.heureDepart ? arrivee.heureDepart|date('H:i') : '' }}"
+        data-quai="{{ arrivee.quai ?? '' }}">
+    <i class="bi bi-pencil-square"></i>
+</button>
+{# {% endif %} #}
+  <div class="card-body">
+    <h5 class="card-title bg-white py-3 ps-1">Navire : <span class="txt-corsica-red"> {{ arrivee.navire.nom ?? '-' }} </span></h5>
+    <h6 class="card-subtitle mb-2 text-body-secondary bg-white py-3 ps-1">Arrivée :  {{ arrivee.heureArrivee ? arrivee.heureArrivee|date('H:i') : '-'}}</h6>
+    <h6 class="card-subtitle mb-2 text-body-secondary bg-white py-3 ps-1">Départ :  {{ arrivee.heureDepart ? arrivee.heureDepart|date('H:i') : '-'}}</h6>
+    <p class="card-text bg-white py-3 ps-1">Quai :   {{ arrivee.quai ?? '-'}}</p>
+  </div>
+</div>
+{# {% endfor %} #}
+{# {% if is_granted('ROLE_ADMIN') %} #}
+{# Modal #}
+<div class="modal fade" id="modalArrivee" tabindex="-1" aria-labelledby="modalArriveeLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="modalArriveeLabel">Modifier l'arrivée</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formArrivee">
+            <input type="hidden" name="_token" value="{{ csrf_token('arrivee_jour') }}">
+            <input type="hidden" name="id" id="arrivee-id">
+
+          <div class="mb-3">
+            <label for="navire-select" class="col-form-label">Navire :</label>
+            <select name="navire" id="navire-select" class="form-select">
+              <option value="">-- Aucun --</option>
+              {# {% for navire in navires %} #}
+                <option value="{{ navire.id }}">{{ navire.nom }}</option>
+              {# {% endfor %} #}
+            </select>
+          </div>
+            <div class="mb-3">
+                <label for="heureArrivee" class="col-form-label">Arrivée :</label>
+                <input type="time" class="form-control" id="heureArrivee" name="heureArrivee">
+            </div>
+                        <div class="mb-3">
+                <label for="heureDepart" class="col-form-label">Départ :</label>
+                <input type="time" class="form-control" id="heureDepart" name="heureDepart">
+            </div>
+ <div class="mb-3">
+            <label for="quai-select" class="col-form-label">Quai :</label>
+            <select name="quai" id="quai-select" class="form-select">
+              <option value="">-- Aucun --</option>
+              <option value="Môle Sud (Poste 1)">Môle Sud (Poste 1)</option>
+              <option value="Môle Nord (Poste 2)">Môle Nord (Poste 2)</option>
+              <option value="Quai du Fango (Poste 3)">Quai du Fango (Poste 3)</option>
+              <option value="Quai de Rive (Poste 4)">Quai de Rive (Poste 4)</option>
+              <option value="Quai Nord (Poste 5)">Quai Nord (Poste 5)</option>
+              <option value="Quai Nord-Est (Poste 6)">Quai Nord-Est (Poste 6)</option>
+              <option value="Quai Est (Poste 7)">Quai Est (Poste 7)</option>
+              <option value="Quai Sud-Est (Poste 8)">Quai Sud-Est (Poste 8)</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+        <button type="button" class="btn btn-primary" id="btnAjouterArrivee">Envoyer</button>
+      </div>
+    </div>
+  </div>
+</div>
+{# {% endif %} #}
+</div>
+
+<div class="flex-grow-1 my-2">
+<img src="{{ asset('images/port-corsica.jpg') }}" alt="Port de Bastia" class="img-fluid w-100 h-100 object-fit-cover rounded">
+</div>
+</div>
+</section>
+</main>
+
 {% endblock %}
