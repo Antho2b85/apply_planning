@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\ArriveeDuJourRepository;
 use App\Repository\NavireRepository;
+use App\Repository\PrevisionDuJourRepository;
 use Symfony\Component\HttpFoundation\Request;
 use DateTime;
 use DateTimeImmutable;
@@ -64,11 +65,70 @@ final class MouvementController extends AbstractController
         }
     }
 
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     #[Route('/previsions', name: 'app_previsions_du_jour')]
-    public function previsions(): Response
-    {
+    public function previsions(
+        PrevisionDuJourRepository $previsionDuJourRepository,
+        ArriveeDuJourRepository $arriveeDuJourRepository
+    ): Response {
+
+        $previsions = $previsionDuJourRepository->findBy([], ['position' => 'ASC']);
+        $arrivees = $arriveeDuJourRepository->findBy([], ['position' => 'ASC']);
+
         return $this->render('mouvement/prevision.html.twig', [
-            'controller_name' => 'MouvementController',
-        ]);
+            'previsions' => $previsions,
+            'arrivees' => $arrivees
+            ]);
+    }
+
+    #[IsGranted('ROLE_ADMIN')]
+    #[Route('/admin/prevision/form', name: 'app_admin_prevision_form', methods:['POST'])]
+    public function customPrevisions(
+        Request $request,
+        \Doctrine\ORM\EntityManagerInterface $em,
+        PrevisionDuJourRepository $previsionDuJourRepository
+    ): Response {
+        if ($this->isCsrfTokenValid('prevision_jour', $request->request->get('_token'))) {
+
+            $id = $request->request->get('id');
+            $prevision = $previsionDuJourRepository->find($id);
+            if ($prevision === null) {
+                return $this->json(['status' => 'error', 'message' => 'Prévisions introuvable']);
+            }
+
+            $agentsReserves = $request->request->get('agentsReserves');
+            $totalRemorques = $request->request->get('totalRemorques');
+            $embarque = $request->request->get('embarque');
+            $titres = $request->request->get('titres');
+            $attentes = $request->request->get('attentes');
+            $agentsControle = $request->request->get('agentsControle');
+            $totalPassagers = $request->request->get('totalPassagers');
+            $autosBasses = $request->request->get('autosBasses');
+            $hauteurs = $request->request->get('hauteurs');
+            $attelages = $request->request->get('attelages');
+            $motos = $request->request->get('motos');
+            $controles = $request->request->get('controles');
+            $aVenir = $request->request->get('aVenir');
+
+            $prevision->setAgentsReserves($agentsReserves ?: null);
+            $prevision->setTotalRemorques(!empty($totalRemorques) ? (int) $totalRemorques : null);
+            $prevision->setEmbarque(!empty($embarque) ? (int) $embarque : null);
+            $prevision->setTitres(!empty($titres) ? (int) $titres : null);
+            $prevision->setAttentes(!empty($attentes) ? (int) $attentes : null);
+            $prevision->setAgentsControle($agentsControle ?: null);
+            $prevision->setTotalPassagers(!empty($totalPassagers) ? (int) $totalPassagers : null);
+            $prevision->setAutosBasses(!empty($autosBasses) ? (int) $autosBasses : null);
+            $prevision->setHauteurs(!empty($hauteurs) ? (int) $hauteurs : null);
+            $prevision->setAttelages(!empty($attelages) ? (int) $attelages : null);
+            $prevision->setMotos(!empty($motos) ? (int) $motos : null);
+            $prevision->setControles(!empty($controles) ? (int) $controles : null);
+            $prevision->setAvenir(!empty($aVenir) ? (int) $aVenir : null);
+            $prevision->setUpdatedAt(new DateTimeImmutable());
+
+            $em->flush();
+            return $this->json(['status' => 'ok']);
+        } else {
+            return $this->json(['status' => 'error', 'message' => 'Token CSRF invalide']);
+        }
     }
 }

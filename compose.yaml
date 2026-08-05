@@ -29,7 +29,6 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE_NAME}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    # Les ports sont gérés par le fichier override pour le local
     volumes:
       - mysql_data:/var/lib/mysql
 

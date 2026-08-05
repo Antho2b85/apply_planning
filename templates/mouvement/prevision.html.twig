@@ -11,93 +11,165 @@
 
 <main>
 <section>
-<div class="d-flex flex-column flex-lg-row align-items-center align-items-lg-stretch gap-3 ms-2">
+<div class="d-flex flex-column gap-3 mx-2">
 <div class="d-flex flex-column">
-{# {% for arrivee in arrivees %} #}
-<div class="card bg-corsica-grey my-2 position-relative" style="width: 18rem;">
-{# {% if is_granted('ROLE_ADMIN') %} #}
+{% for prevision in previsions %}
+{% set arrivee = arrivees[loop.index0] %}
+<div class="card bg-corsica-grey my-2 position-relative w-100">
+{% if is_granted('ROLE_ADMIN') %}
 <button type="button"
         class="btn btn-link position-absolute end-0 pe-4 pt-3"
         data-bs-toggle="modal"
-        data-bs-target="#modalArrivee"
-        data-id="{{ arrivee.id }}"
-        data-navire-id="{{ arrivee.navire ? arrivee.navire.id : '' }}"
-        data-heure-arrivee="{{ arrivee.heureArrivee ? arrivee.heureArrivee|date('H:i') : '' }}"
-        data-heure-depart="{{ arrivee.heureDepart ? arrivee.heureDepart|date('H:i') : '' }}"
-        data-quai="{{ arrivee.quai ?? '' }}">
+        data-bs-target="#modalPrevisions"
+        data-id="{{ prevision.id }}"
+        data-agents-reserves="{{ prevision.agentsReserves ?? '' }}"
+        data-total-remorques="{{ prevision.totalRemorques ?? ''}}"
+        data-embarque="{{ prevision.embarque ?? ''}}"
+        data-titres="{{ prevision.titres ?? ''}}"
+        data-attentes="{{ prevision.attentes ?? ''}}"
+        data-agents-controle="{{ prevision.agentsControle ?? ''}}"
+        data-total-passagers="{{ prevision.totalPassagers ?? ''}}"
+        data-autos-basses="{{ prevision.autosBasses ?? ''}}"
+        data-hauteurs="{{ prevision.hauteurs ?? ''}}"
+        data-attelages="{{ prevision.attelages ?? ''}}"
+        data-motos="{{ prevision.motos ?? ''}}"
+        data-controles="{{ prevision.controles ?? ''}}"
+        data-a-venir="{{ prevision.aVenir ?? ''}}"
+        >
     <i class="bi bi-pencil-square"></i>
 </button>
-{# {% endif %} #}
-  <div class="card-body">
-    <h5 class="card-title bg-white py-3 ps-1">Navire : <span class="txt-corsica-red"> {{ arrivee.navire.nom ?? '-' }} </span></h5>
-    <h6 class="card-subtitle mb-2 text-body-secondary bg-white py-3 ps-1">Arrivée :  {{ arrivee.heureArrivee ? arrivee.heureArrivee|date('H:i') : '-'}}</h6>
-    <h6 class="card-subtitle mb-2 text-body-secondary bg-white py-3 ps-1">Départ :  {{ arrivee.heureDepart ? arrivee.heureDepart|date('H:i') : '-'}}</h6>
-    <p class="card-text bg-white py-3 ps-1">Quai :   {{ arrivee.quai ?? '-'}}</p>
+{% endif %}
+<h5><span class="txt-corsica-red ms-1 mt-1">{{ arrivee.navire.nom ?? '-' }}</span></h5>
+{# Carte frêt #}
+<div class="row">
+  <div class="card-body col-6">
+    <h5 class="card-title py-3 ps-1">Frêt : </h5>
+    
+        <p>Agents réserves : <span class="txt-corsica-secondary">{{ prevision.agentsReserves ?? '-' }}</span></p>
+        <p>Total remorques : {{ prevision.totalRemorques ?? '-' }}</p>
+        <p>Titres : {{ prevision.titres ?? '-'}} / {{ prevision.totalRemorques ?? '-'}}</p>
+        <p>Embarqués : {{ prevision.embarque ?? '-' }}</p>
+        <p>Attentes : {{ prevision.attentes ?? '-'}}</p>
   </div>
+
+{# Carte passagers #}
+  <div class="card-body col-6">
+  <h5 class="card-title py-3 ps-1">Passagers :</h5>
+        <p>Agents contrôles : <span class="txt-corsica-secondary">{{ prevision.agentsControle ?? '-' }}</span></p>
+        <p>Total passagers : {{ prevision.totalPassagers ?? '-' }}</p>
+        <p>Autos basses : {{ prevision.autosBasses ?? '-'}}</p>
+        <p>Hauteurs : {{ prevision.hauteurs ?? '-'}}</p>
+        <p>Attelages : {{ prevision.attelages ?? '-'}}</p>
+        <p>Motos : {{ prevision.motos ?? '-'}}</p>
+        <p>Controlés : {{ prevision.controles ?? '-'}}</p>
+        <p>À venir : {{ prevision.aVenir ?? '-'}}</p>
+  </div>
+  </div>
+  </div>
+{% endfor %}
 </div>
-{# {% endfor %} #}
-{# {% if is_granted('ROLE_ADMIN') %} #}
-{# Modal #}
-<div class="modal fade" id="modalArrivee" tabindex="-1" aria-labelledby="modalArriveeLabel" aria-hidden="true">
+{% if is_granted('ROLE_ADMIN') %}
+{# Modal prévisions #}
+<div class="modal fade" id="modalPrevisions" tabindex="-1" aria-labelledby="modalPrevisionLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="modalArriveeLabel">Modifier l'arrivée</h1>
+        <h1 class="modal-title fs-5" id="modalPrevisionLabel">Modifier prévisions</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="formArrivee">
-            <input type="hidden" name="_token" value="{{ csrf_token('arrivee_jour') }}">
-            <input type="hidden" name="id" id="arrivee-id">
+        <form id="formPrevision">
+            <input type="hidden" name="_token" value="{{ csrf_token('prevision_jour') }}">
+            <input type="hidden" name="id" id="prevision-id">
 
-          <div class="mb-3">
-            <label for="navire-select" class="col-form-label">Navire :</label>
-            <select name="navire" id="navire-select" class="form-select">
-              <option value="">-- Aucun --</option>
-              {# {% for navire in navires %} #}
-                <option value="{{ navire.id }}">{{ navire.nom }}</option>
-              {# {% endfor %} #}
-            </select>
-          </div>
-            <div class="mb-3">
-                <label for="heureArrivee" class="col-form-label">Arrivée :</label>
-                <input type="time" class="form-control" id="heureArrivee" name="heureArrivee">
-            </div>
-                        <div class="mb-3">
-                <label for="heureDepart" class="col-form-label">Départ :</label>
-                <input type="time" class="form-control" id="heureDepart" name="heureDepart">
-            </div>
- <div class="mb-3">
-            <label for="quai-select" class="col-form-label">Quai :</label>
-            <select name="quai" id="quai-select" class="form-select">
-              <option value="">-- Aucun --</option>
-              <option value="Môle Sud (Poste 1)">Môle Sud (Poste 1)</option>
-              <option value="Môle Nord (Poste 2)">Môle Nord (Poste 2)</option>
-              <option value="Quai du Fango (Poste 3)">Quai du Fango (Poste 3)</option>
-              <option value="Quai de Rive (Poste 4)">Quai de Rive (Poste 4)</option>
-              <option value="Quai Nord (Poste 5)">Quai Nord (Poste 5)</option>
-              <option value="Quai Nord-Est (Poste 6)">Quai Nord-Est (Poste 6)</option>
-              <option value="Quai Est (Poste 7)">Quai Est (Poste 7)</option>
-              <option value="Quai Sud-Est (Poste 8)">Quai Sud-Est (Poste 8)</option>
-            </select>
-          </div>
+      <div class="row">
+      {# Partie gauche (modal frêt) #}
+      <div class="col-6">
+      <h6 class="underline">Frêt :</h6>
+
+      <div>
+  <label for="agentsReserves" class="col-form-label">Agents réserves</label>
+  <input type="text" name="agentsReserves" id="agentsReserves" class="form-control">
+</div>
+      <div>
+      <label for="totalRemorques" class="col-form-label">Total remorques</label>
+      <input type="number" name="totalRemorques" id="totalRemorques" class="form-control">
+      </div>
+            <div>
+      <label for="embarque" class="col-form-label">Embarqués</label>
+      <input type="number" name="embarque" id="embarque" class="form-control">
+      </div>
+            <div>
+      <label for="titres" class="col-form-label">Titres</label>
+      <input type="number" name="titres" id="titres" class="form-control">
+      </div>
+                  <div>
+      <label for="attentes" class="col-form-label">Attentes</label>
+      <input type="number" name="attentes" id="attentes" class="form-control">
+      </div>
+      </div>
+
+      {# Partie droite (modal passagers) #}
+      <div class="col-6">
+            <h6 class="underline">Passagers :</h6>
+
+      <div>
+  <label for="agentsControle" class="col-form-label">Agents contrôle</label>
+  <input type="text" name="agentsControle" id="agentsControle" class="form-control">
+</div>  
+      <div>
+      <label for="totalPassagers" class="col-form-label">total passagers</label>
+      <input type="number" name="totalPassagers" id="totalPassagers" class="form-control">
+      </div>
+                  <div>
+      <label for="autosBasses" class="col-form-label">Autos basses</label>
+      <input type="number" name="autosBasses" id="autosBasses" class="form-control">
+      </div>
+                  <div>
+      <label for="hauteurs" class="col-form-label">Hauteurs</label>
+      <input type="number" name="hauteurs" id="hauteurs" class="form-control">
+      </div>
+                  <div>
+      <label for="attelages" class="col-form-label">Attelages</label>
+      <input type="number" name="attelages" id="attelages" class="form-control">
+      </div>
+                  <div>
+      <label for="motos" class="col-form-label">Motos</label>
+      <input type="number" name="motos" id="motos" class="form-control">
+      </div>
+                  <div>
+      <label for="controles" class="col-form-label">Controlés</label>
+      <input type="number" name="controles" id="controles" class="form-control">
+      </div>
+                  <div>
+      <label for="aVenir" class="col-form-label">À venir</label>
+      <input type="number" name="aVenir" id="aVenir" class="form-control">
+      </div>
+
+      
+      </div>
+      
+      </div>
+
         </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-        <button type="button" class="btn btn-primary" id="btnAjouterArrivee">Envoyer</button>
+        <button type="button" class="btn btn-primary" id="btnEnvoyerPrevision">Envoyer</button>
       </div>
     </div>
   </div>
 </div>
-{# {% endif %} #}
-</div>
-
-<div class="flex-grow-1 my-2">
-<img src="{{ asset('images/port-corsica.jpg') }}" alt="Port de Bastia" class="img-fluid w-100 h-100 object-fit-cover rounded">
+{% endif %}
 </div>
 </div>
 </section>
 </main>
+
+{% block javascripts %}
+{{ parent() }}
+{{ importmap('previsions_du_jour') }}
+{% endblock %}
+{{ include('_partials/_footer.html.twig') }}
 
 {% endblock %}

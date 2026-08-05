@@ -2,7 +2,7 @@
 
 namespace App\Security;
 
-use Proxies\__CG__\App\Entity\User;
+use App\Entity\User;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,13 +36,18 @@ class UserAuthenticator extends AbstractLoginFormAuthenticator
 
         $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $email);
 
+        $badges = [
+        new CsrfTokenBadge('authenticate', $request->getPayload()->getString('_csrf_token')),
+    ];
+
+        if ($request->request->has('_remember_me')) {
+            $badges[] = new RememberMeBadge();
+        }
+
         return new Passport(
             new UserBadge($email),
             new PasswordCredentials($request->getPayload()->getString('password')),
-            [
-                new CsrfTokenBadge('authenticate', $request->getPayload()->getString('_csrf_token')),
-                new RememberMeBadge(),
-            ]
+            $badges
         );
     }
 

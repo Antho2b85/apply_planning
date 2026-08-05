@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\Absence;
 use App\Entity\Creneau;
 use App\Entity\UserCreneau;
+use App\Entity\Planning;
 use App\Repository\CreneauRepository;
 use App\Repository\UserCreneauRepository;
 use App\Repository\UserRepository;
@@ -78,111 +79,135 @@ final class PlanningController extends AbstractController
         UserRepository $userRepository,
         \App\Repository\PlanningRepository $planningRepository
     ): Response {
-        // Vérification du token CSRF
-        if ($this->isCsrfTokenValid('modifier_planning', $request->request->get('_token'))) {
-            // Récupération des données du formulaire
-            $horairesMatinDebut = $request->request->get('horairesMatinDebut');
-            $horairesMatinFin = $request->request->get('horairesMatinFin');
-            $horairesApremDebut = $request->request->get('horairesApremDebut');
-            $horairesApremFin = $request->request->get('horairesApremFin');
-            $creneauMatinId = $request->request->get('creneauMatinId');
-            $creneauApremId = $request->request->get('creneauApremId');
-            $userId = $request->request->get('userId');
-            $date = $request->request->get('date');
+        if (!$this->isCsrfTokenValid('modifier_planning', $request->request->get('_token'))) {
+            return $this->json(['status' => 'error', 'message' => 'Token CSRF invalide']);
+        }
 
-            // Récupération des entités User et Planning
-            $dateObj = new DateTime($date);
-            $user = $userRepository->find($userId);
-            $planning = $planningRepository->findByUserAndWeek($user, $dateObj);
-            if ($user !== null && $planning !== null) {
-                // Création ou modification du créneau matin
-                if (empty($creneauMatinId)) {
-                    // Nouveau créneau matin
-                    $creneauMatin = new Creneau();
+        $horairesMatinDebut = $request->request->get('horairesMatinDebut');
+        $horairesMatinFin = $request->request->get('horairesMatinFin');
+        $horairesApremDebut = $request->request->get('horairesApremDebut');
+        $horairesApremFin = $request->request->get('horairesApremFin');
+        $creneauMatinId = $request->request->get('creneauMatinId');
+        $creneauApremId = $request->request->get('creneauApremId');
+        $userId = $request->request->get('userId');
+        $date = $request->request->get('date');
 
-                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
-                        $creneauMatin->setHeureDebut(DateTime::createFromFormat('H:i', $horairesMatinDebut));
-                        $creneauMatin->setHeureFin(DateTime::createFromFormat('H:i', $horairesMatinFin));
-                    }
+        $dateObj = new DateTime($date);
+        $user = $userRepository->find($userId);
 
-                    $creneauMatin->setPoste($request->request->get('post-matin'));
-                    $creneauMatin->setPlanningId($planning);
-                    $creneauMatin->setTypeShift('MATIN');
-                    $creneauMatin->setCreatedAt(new DateTimeImmutable());
-                    $creneauMatin->setUpdatedAt(new DateTimeImmutable());
+        if ($user === null) {
+            return $this->json(['status' => 'error', 'message' => 'Agent introuvable']);
+        }
 
-                    $debut = DateTime::createFromFormat('H:i', $horairesMatinDebut);
-                    $fin = DateTime::createFromFormat('H:i', $horairesMatinFin);
-                    $duree = ($fin->getTimestamp() - $debut->getTimestamp()) / 60;
+        $planning = $planningRepository->findByUserAndWeek($user, $dateObj);
 
-                    $creneauMatin->setDuree((int)$duree);
-                    $creneauMatin->setDate($dateObj);
-                    $em->persist($creneauMatin);
+        if ($planning === null) {
+            // Aucun planning pour cette semaine : on le crée à la volée
+            $jourSemaine = (int) $dateObj->format('N');
+            $lundiSemaine = (clone $dateObj)->modify('-' . ($jourSemaine - 1) . ' days');
+            $lundiSemaine->setTime(0, 0, 0);
 
-                    $userCreneau = new UserCreneau();
-                    $userCreneau ->setUser($user);
-                    $userCreneau ->setCreneau($creneauMatin);
-                    $userCreneau->setCreatedAt(new DateTimeImmutable());
-                    $userCreneau->setUpdatedAt(new DateTimeImmutable());
-                    $em->persist($userCreneau);
+            $planning = new Planning();
+            $planning->setUser($user);
+            $planning->setDateDebutSemaine($lundiSemaine);
+            $em->persist($planning);
+        }
 
-                } else {
-                    // Modification du créneau matin existant
-                    $creneauMatin = $creneauRepository->find($creneauMatinId);
-                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
-                        $creneauMatin->setHeureDebut(DateTime::createFromFormat('H:i', $horairesMatinDebut));
-                        $creneauMatin->setHeureFin(DateTime::createFromFormat('H:i', $horairesMatinFin));
-                    }
-                    $creneauMatin->setPoste($request->request->get('post-matin'));
-                }
+        // Créneau matin
+        if (empty($creneauMatinId)) {
+            $creneauMatin = new Creneau();
 
-                // Création ou modification du créneau apres midi
-                if (empty($creneauApremId)) {
-                    // Nouveau créneau apres midi
-                    $creneauAprem = new Creneau();
-                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
-                        $creneauAprem->setHeureDebut(DateTime::createFromFormat('H:i', $horairesApremDebut));
-                        $creneauAprem->setHeureFin(DateTime::createFromFormat('H:i', $horairesApremFin));
-                    }
-                    $creneauAprem->setPoste($request->request->get('post-aprem'));
-                    $creneauAprem->setPlanningId($planning);
-                    $creneauAprem->setTypeShift('APRES_MIDI');
-                    $creneauAprem->setCreatedAt(new DateTimeImmutable());
-                    $creneauAprem->setUpdatedAt(new DateTimeImmutable());
-
-                    $debut = DateTime::createFromFormat('H:i', $horairesApremDebut);
-                    $fin = DateTime::createFromFormat('H:i', $horairesApremFin);
-                    $duree = ($fin->getTimestamp() - $debut->getTimestamp()) / 60;
-
-                    $creneauAprem->setDuree((int)$duree);
-                    $creneauAprem->setDate($dateObj);
-                    $em->persist($creneauAprem);
-
-                    $userCreneau = new UserCreneau();
-                    $userCreneau ->setUser($user);
-                    $userCreneau ->setCreneau($creneauAprem);
-                    $userCreneau->setCreatedAt(new DateTimeImmutable());
-                    $userCreneau->setUpdatedAt(new DateTimeImmutable());
-                    $em->persist($userCreneau);
-
-                } else {
-                    // Modification créneau apres midi existant
-                    $creneauAprem = $creneauRepository->find($creneauApremId);
-                    if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
-                        $creneauAprem->setHeureDebut(DateTime::createFromFormat('H:i', $horairesApremDebut));
-                        $creneauAprem->setHeureFin(DateTime::createFromFormat('H:i', $horairesApremFin));
-                    }
-                    $creneauAprem->setPoste($request->request->get('post-aprem'));
+            if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
+                $debut = DateTime::createFromFormat('H:i', $horairesMatinDebut);
+                $fin = DateTime::createFromFormat('H:i', $horairesMatinFin);
+                if ($debut !== false && $fin !== false) {
+                    $creneauMatin->setHeureDebut($debut);
+                    $creneauMatin->setHeureFin($fin);
+                    $creneauMatin->setDuree((int) (($fin->getTimestamp() - $debut->getTimestamp()) / 60));
                 }
             }
 
-            // Sauvegarde en BDD
-            $em->flush();
+            $creneauMatin->setPoste($request->request->get('post-matin'));
+            $creneauMatin->setPlanningId($planning);
+            $creneauMatin->setTypeShift('MATIN');
+            $creneauMatin->setCreatedAt(new DateTimeImmutable());
+            $creneauMatin->setUpdatedAt(new DateTimeImmutable());
+            $creneauMatin->setDate($dateObj);
+            $em->persist($creneauMatin);
 
-            return $this->json(['status' => 'ok']);
+            $userCreneau = new UserCreneau();
+            $userCreneau->setUser($user);
+            $userCreneau->setCreneau($creneauMatin);
+            $userCreneau->setCreatedAt(new DateTimeImmutable());
+            $userCreneau->setUpdatedAt(new DateTimeImmutable());
+            $em->persist($userCreneau);
         } else {
-            return $this->json(['status' => 'error', 'message' => 'Token CSRF invalide']);
+            $creneauMatin = $creneauRepository->find($creneauMatinId);
+            if ($creneauMatin === null) {
+                return $this->json(['status' => 'error', 'message' => 'Créneau matin introuvable']);
+            }
+
+            if (!empty($horairesMatinDebut) && !empty($horairesMatinFin)) {
+                $debut = DateTime::createFromFormat('H:i', $horairesMatinDebut);
+                $fin = DateTime::createFromFormat('H:i', $horairesMatinFin);
+                if ($debut !== false && $fin !== false) {
+                    $creneauMatin->setHeureDebut($debut);
+                    $creneauMatin->setHeureFin($fin);
+                    $creneauMatin->setDuree((int) (($fin->getTimestamp() - $debut->getTimestamp()) / 60));
+                }
+            }
+            $creneauMatin->setPoste($request->request->get('post-matin'));
         }
+
+        // Créneau après-midi
+        if (empty($creneauApremId)) {
+            $creneauAprem = new Creneau();
+
+            if (!empty($horairesApremDebut) && !empty($horairesApremFin)) {
+                $debut = DateTime::createFromFormat('H:i', $horairesApremDebut);
+                $fin = DateTime::createFromFormat('H:i', $horairesApremFin);
+                if ($debut !== false && $fin !== false) {
+                    $creneauAprem->setHeureDebut($debut);
+                    $creneauAprem->setHeureFin($fin);
+                    $creneauAprem->setDuree((int) (($fin->getTimestamp() - $debut->getTimestamp()) / 60));
+                }
+            }
+
+            $creneauAprem->setPoste($request->request->get('post-aprem'));
+            $creneauAprem->setPlanningId($planning);
+            $creneauAprem->setTypeShift('APRES_MIDI');
+            $creneauAprem->setCreatedAt(new DateTimeImmutable());
+            $creneauAprem->setUpdatedAt(new DateTimeImmutable());
+            $creneauAprem->setDate($dateObj);
+            $em->persist($creneauAprem);
+
+            $userCreneau = new UserCreneau();
+            $userCreneau->setUser($user);
+            $userCreneau->setCreneau($creneauAprem);
+            $userCreneau->setCreatedAt(new DateTimeImmutable());
+            $userCreneau->setUpdatedAt(new DateTimeImmutable());
+            $em->persist($userCreneau);
+        } else {
+            $creneauAprem = $creneauRepository->find($creneauApremId);
+            if ($creneauAprem === null) {
+                return $this->json(['status' => 'error', 'message' => 'Créneau après-midi introuvable']);
+            }
+
+            if (!empty($horairesApremDebut) && !empty($horairesApremFin)) {
+                $debut = DateTime::createFromFormat('H:i', $horairesApremDebut);
+                $fin = DateTime::createFromFormat('H:i', $horairesApremFin);
+                if ($debut !== false && $fin !== false) {
+                    $creneauAprem->setHeureDebut($debut);
+                    $creneauAprem->setHeureFin($fin);
+                    $creneauAprem->setDuree((int) (($fin->getTimestamp() - $debut->getTimestamp()) / 60));
+                }
+            }
+            $creneauAprem->setPoste($request->request->get('post-aprem'));
+        }
+
+        $em->flush();
+
+        return $this->json(['status' => 'ok']);
     }
 
     #[IsGranted('IS_AUTHENTICATED_FULLY')]

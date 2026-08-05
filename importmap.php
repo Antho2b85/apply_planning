@@ -43,4 +43,8 @@ return [
         'path' => './assets/js/arrivee.js',
         'entrypoint' => true,
     ],
+    'previsions_du_jour' => [
+        'path' => './assets/js/prevision.js',
+        'entrypoint' => true,
+    ],
 ];
